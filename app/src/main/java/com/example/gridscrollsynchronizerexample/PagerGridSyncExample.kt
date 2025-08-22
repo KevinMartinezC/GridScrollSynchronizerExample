@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,22 +37,13 @@ fun PagerGridSyncExample(
     modifier: Modifier = Modifier
 ) {
     val pageCount = 3
+    val columns = 3
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { pageCount })
+    val scope = rememberCoroutineScope()
 
     val syncer = remember { GridScrollSynchronizer() }
 
     val items = remember { (0 until 50).toList() }
-    val columns = 3
-
-    val gridStates = remember(pageCount) {
-        List(pageCount) { LazyGridState() }
-    }
-
-    LaunchedEffect(gridStates) {
-        gridStates.forEach { state ->
-            syncer.bind(state, this)
-        }
-    }
 
     Column(modifier.fillMaxSize()) {
         Text(
@@ -67,7 +59,8 @@ fun PagerGridSyncExample(
             contentPadding = PaddingValues(horizontal = 12.dp),
             modifier = Modifier.fillMaxSize()
         ) { pageIndex ->
-            val gridState = gridStates[pageIndex]
+            val gridState = rememberLazyGridState()
+            LaunchedEffect(Unit) { syncer.bind(gridState, scope) }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(columns),
                 state = gridState,

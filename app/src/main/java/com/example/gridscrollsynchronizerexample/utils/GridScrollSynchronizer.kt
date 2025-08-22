@@ -56,7 +56,7 @@ class GridScrollSynchronizer {
         scope.launch {
             val leaderFlow = leaderPos.filterNotNull()
             val countFlow = snapshotFlow { state.layoutInfo.totalItemsCount }
-                .filter { it >= 0 }
+                .filter { it >= EMPTY_ITEM_COUNT }
                 .distinctUntilChanged()
                 .onStart { emit(state.layoutInfo.totalItemsCount) }
 
@@ -66,9 +66,9 @@ class GridScrollSynchronizer {
     }
 
     private suspend fun LazyGridState.scrollToClamped(pos: Pos) {
-        val maxIndex = max(0, layoutInfo.totalItemsCount - 1)
+        val maxIndex = max(MIN_ITEM_INDEX, layoutInfo.totalItemsCount - LAST_INDEX_OFFSET)
         val safeIndex = min(pos.index, maxIndex)
-        if (safeIndex < 0) return
+        if (safeIndex < MIN_ITEM_INDEX) return
 
         val alreadyThere = firstVisibleItemIndex == safeIndex &&
                 firstVisibleItemScrollOffset == pos.offset
@@ -76,5 +76,17 @@ class GridScrollSynchronizer {
         if (!alreadyThere) {
             scrollToItem(safeIndex, pos.offset)
         }
+    }
+
+
+    companion object {
+        /** Minimum allowed index for any grid item. */
+        private const val MIN_ITEM_INDEX = 0
+
+        /** Fallback total item count when no items exist. */
+        private const val EMPTY_ITEM_COUNT = 0
+
+        /** Offset to convert total item count into last valid index. */
+        private const val LAST_INDEX_OFFSET = 1
     }
 }
